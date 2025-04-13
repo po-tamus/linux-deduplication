@@ -49,3 +49,33 @@ File <number>:
 "\t\t\t\tPaths:\t<Path 1>"  
 "\t\t\t\t\t<Path N>
 ```
+## Error Handling
+- Use `fprintf` 
+- Use `stderr` 
+	- If no directory is given, print `Usage: ./detect_dups <directory>` and exit with text `"failure"` 
+	- If an incorrect directory was given, print `Error <error_number>: <directory> is not a valid directory` and exit with text `"failure"` 
+## Sample Output 
+```bash
+File 1  
+	MD5 Hash: e711f198c6af16d1d13c99f030173add  
+	Hard Link (2): 409929280  
+		Paths: file1.txt  
+			file1h.txt  
+		Soft Link 1(1): 409929290  
+			Paths: file1s.txt  
+		Soft Link 2(1): 409929374
+			Paths: file1hs.txt  
+	Hard Link (1): 409929281  
+		Paths: file2.txt  
+File 2  
+	MD5 Hash: 4fe82b0e520f6c2ff023c3e41f6b5c70  
+	Hard Link (3): 409929098  
+		Paths: file3.txt  
+			   file3h.txt  
+			   file4.txt  
+		Soft Link 1(1): 409929270  
+			Paths: file3s.txt  
+				   file3hs.txt  
+		Soft Link 2(1): 409929490  
+			Paths: file4s.txt
+```
