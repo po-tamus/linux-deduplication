@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
 			soft_link_node *curr_soft_link;
 			for (curr_soft_link=curr_hard_link->soft_links; curr_soft_link!=NULL; curr_soft_link=curr_soft_link->hh.next) {
-				printf("\t\tSoft Link %d(1): %lu\n", curr_soft_link->number, curr_soft_link->inode);
+				printf("\t\tSoft Link %d(%d): %lu\n", curr_soft_link->number, curr_soft_link->num_files, curr_soft_link->inode);
 				
 				// soft link paths
 				printf("\t\t\t\tPaths: %s\n", curr_soft_link->head->name); 
@@ -82,9 +82,9 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 
 
 	if (tflag==FTW_D) {
-		printf("(Directory)\n");
-		printf("level=%02d, size=%07ld path=%s filename=%s\n",
-		ftwbuf->level, sb->st_size, fpath, fpath + ftwbuf->base);
+		//printf("(Directory)\n");
+		//printf("level=%02d, size=%07ld path=%s filename=%s\n",
+		//ftwbuf->level, sb->st_size, fpath, fpath + ftwbuf->base);
 		return 0;
 	} else if (tflag==FTW_F||tflag==FTW_SL) {
 
@@ -169,7 +169,7 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 
 		if (tflag==FTW_F) {
 
-			printf("Regular File: %s\n", fpath);
+			// printf("Regular File: %s\n", fpath);
 			
 			
 			hard_link_node *curr_hard_link = find_hard_link(&(sb->st_ino), curr_file);
@@ -190,11 +190,11 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 				add_hard_link(new_hard_link, curr_file); 
 
 
-				if (curr_file->hard_links==NULL) {
-					printf("****HARD LINK IS NULL HERE****\n"); 
-				} else {
-					printf("****HARD LINK+****\n");
-				}
+				// if (curr_file->hard_links==NULL) {
+				// 	printf("****HARD LINK IS NULL HERE****\n"); 
+				// } else {
+				// 	printf("****HARD LINK+****\n");
+				// }
 				
 			} else {
 				// increment the count, append to the path 
@@ -206,7 +206,7 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 			file_name_LL *new_path = (file_name_LL*)malloc(sizeof(file_name_LL));
 			new_path->name=malloc(strlen(fpath));
 			strcpy(new_path->name, fpath);
-			printf("path name is: %s\n", fpath);
+			//printf("path name is: %s\n", fpath);
 			if (curr_hard_link->head==NULL) {
 				curr_hard_link->head = new_path;
 			} else {
@@ -217,7 +217,7 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 			
 		} else {
 
-			printf("(Symbolic Link)\n");
+			//printf("(Symbolic Link)\n");
 			struct stat target_stat;
 
 			// Follow the symlink to get info about its target
@@ -235,25 +235,38 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 				ssize_t path_length = readlink(fpath, buf, PATH_MAX);
 				buf[path_length]='\0';
 
-				
+				// char symlink_abs[PATH_MAX], target_abs[PATH_MAX];
+				// realpath(fpath, symlink_abs); // resolves the symlink itself
+				// realpath(buf, target_abs); // resolves the target path
 
-				const char* cwd = getcwd(NULL, 0);
-				if (cwd==NULL) {
-					printf("****HERE****\n");
-				}
-				printf("****cwd: %s****\n", cwd);
+				// char* symlink_dir = dirname(strdup(symlink_abs));
+
+				// char* relative = get_relative_path(symlink_dir, target_abs);
+				// printf("Relative path from symlink to target: %s\n", relative);
+
+				// free(relative);
+
 				
-				size_t cwd_len = strlen(cwd);
+				// const char* cwd = getcwd(NULL, 0);
+				// if (cwd!=NULL) {
+				// 	printf("****HERE****\n");
+				// }
+				// if (path_length==-1) {
+				// 	printf("****HEREYEAH****\n");
+				// }
+				// printf("****cwd: %s****\n", cwd);
+				
+				// size_t cwd_len = strlen(cwd);
 				
 				// checking if the first cwd_len characters match
-				if (strncmp(buf, cwd, cwd_len) == 0) {
+				// if (strncmp(buf, cwd, cwd_len) == 0) {
 					
-					// Strip off cwd to get relative path
-					// by moving forward in memory 
-					const char* relative_path = buf + cwd_len;
-					if (*relative_path == '/') relative_path++;  // remove leading slash
-					printf("Relative path: %s\n", relative_path);
-				}
+				// 	// Strip off cwd to get relative path
+				// 	// by moving forward in memory 
+				// 	const char* relative_path = buf + cwd_len;
+				// 	if (*relative_path == '/') relative_path++;  // remove leading slash
+				// 	printf("Relative path: %s\n", relative_path);
+				// }
 				
 				// hard_link_node *target_hard_link = find_file_in_paths(buf, curr_file, target_stat.st_ino);
 				
@@ -289,7 +302,7 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 					new_soft_link->number = target_hard_link->number_of_soft_links;
 					
 					new_soft_link->inode = sb->st_ino;
-					new_soft_link->num_files=0;
+					new_soft_link->num_files=1;
 					new_soft_link->head = NULL;
 					
 					add_soft_link(new_soft_link, target_hard_link);	
@@ -521,6 +534,52 @@ static int render_file_info(const char *fpath, const struct stat *sb, int tflag,
 	return 0;  
 }
 
+// Helper: Get relative path from 'from' to 'to'
+char* get_relative_path(const char* from, const char* to) {
+    char from_copy[PATH_MAX];
+    char to_copy[PATH_MAX];
+
+    strncpy(from_copy, from, PATH_MAX);
+    strncpy(to_copy, to, PATH_MAX);
+
+    char *from_tokens[PATH_MAX], *to_tokens[PATH_MAX];
+    int from_len = 0, to_len = 0;
+
+    char *token = strtok(from_copy, "/");
+    while (token) {
+        from_tokens[from_len++] = token;
+        token = strtok(NULL, "/");
+    }
+
+    token = strtok(to_copy, "/");
+    while (token) {
+        to_tokens[to_len++] = token;
+        token = strtok(NULL, "/");
+    }
+
+    // Find common prefix
+    int i = 0;
+    while (i < from_len && i < to_len && strcmp(from_tokens[i], to_tokens[i]) == 0) {
+        i++;
+    }
+
+    // Go up for remaining from
+    int up = from_len - i;
+    char* result = malloc(PATH_MAX);
+    result[0] = '\0';
+
+    for (int j = 0; j < up; j++) {
+        strcat(result, "../");
+    }
+
+    for (int j = i; j < to_len; j++) {
+        strcat(result, to_tokens[j]);
+        if (j < to_len - 1) strcat(result, "/");
+    }
+
+    return result;
+}
+
 // add any other functions you may need over here
 
 void create_hard_link(char* path, file_node *curr_file) {
@@ -536,20 +595,19 @@ void create_hard_link(char* path, file_node *curr_file) {
 
 	// set the inode and num_files of the hard link entry
 	new_hard_link->inode = sb.st_ino; 
-	new_hard_link->num_files=1;
+	new_hard_link->num_files=0;
 	new_hard_link->soft_links=NULL;
 	new_hard_link->number_of_soft_links=0;
 	new_hard_link->head=NULL;
 	
 	add_hard_link(new_hard_link, curr_file); 
 	
-	// add the path 
-	// new path linked list
-	// new path linked list
-	file_name_LL *new_path = (file_name_LL*)malloc(sizeof(file_name_LL));
-	new_path->name=malloc(strlen(path));
-	strcpy(new_path->name, path);
-	new_hard_link->head = new_path; 
+	
+	// REFORMAT 
+	// file_name_LL *new_path = (file_name_LL*)malloc(sizeof(file_name_LL));
+	// new_path->name=malloc(strlen(path));
+	// strcpy(new_path->name, path);
+	// new_hard_link->head = new_path; 
 	
 }
 

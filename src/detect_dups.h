@@ -72,3 +72,4 @@ void add_hard_link(hard_link_node *new_hard_link, file_node *curr_files);
 hard_link_node *find_hard_link(ino_t *inode, file_node *curr_file);
 void add_soft_link(soft_link_node *new_soft_link, hard_link_node *curr_hard_link);
 soft_link_node *find_soft_link(ino_t *inode, hard_link_node *target_hard_link);
+char* get_relative_path(const char* from, const char* to);
